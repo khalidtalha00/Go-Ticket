@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, MenuItem, Box } from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, MenuItem, Box, Autocomplete } from '@mui/material';
 import QRCode from 'react-qr-code';
 import { useTickets } from '../../context/TicketContext';
 import Map from '../../components/Map';
@@ -17,6 +17,30 @@ const BookTicket: React.FC = () => {
   const [transportType, setTransportType] = useState('bus_non_ac');
   const [ticket, setTicket] = useState<any>(null);
   const { addTicket } = useTickets();
+  
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [sourceOptions, setSourceOptions] = useState<any[]>([]);
+  const [destinationOptions, setDestinationOptions] = useState<any[]>([]);
+
+  const fetchSuggestions = async (query: string, setOptions: (options: any[]) => void) => {
+    if (!query || query.length < 3) return;
+    
+    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+    
+    if (userLocation) {
+      // Bias search to user location (approx ~50km box)
+      const viewbox = `${userLocation.lng - 0.5},${userLocation.lat + 0.5},${userLocation.lng + 0.5},${userLocation.lat - 0.5}`;
+      url += `&viewbox=${viewbox}&bounded=0`; // bounded=0 means prefer but don't restrict
+    }
+    
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      setOptions(data);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    }
+  };
 
   const handleBook = () => {
     // Mock distance calculation
@@ -42,20 +66,33 @@ const BookTicket: React.FC = () => {
         <Box sx={{ flex: 1 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom>Book Ticket</Typography>
-            <TextField
-              label="Source"
-              fullWidth
-              margin="normal"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
+            
+            <Autocomplete
+              freeSolo
+              options={sourceOptions}
+              getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
+              onInputChange={(_, newInputValue) => {
+                setSource(newInputValue);
+                fetchSuggestions(newInputValue, setSourceOptions);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Source" fullWidth margin="normal" />
+              )}
             />
-            <TextField
-              label="Destination"
-              fullWidth
-              margin="normal"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
+
+            <Autocomplete
+              freeSolo
+              options={destinationOptions}
+              getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
+              onInputChange={(_, newInputValue) => {
+                setDestination(newInputValue);
+                fetchSuggestions(newInputValue, setDestinationOptions);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Destination" fullWidth margin="normal" />
+              )}
             />
+
             <TextField
               select
               label="Transport Type"
@@ -97,7 +134,7 @@ const BookTicket: React.FC = () => {
             </Paper>
           ) : (
             <Paper sx={{ height: '100%', minHeight: 400, overflow: 'hidden' }}>
-               <Map />
+               <Map onLocationFound={(lat, lng) => setUserLocation({ lat, lng })} />
             </Paper>
           )}
         </Box>
