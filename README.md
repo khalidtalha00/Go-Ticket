@@ -21,6 +21,16 @@ Go Tickets is a full-stack web application for booking travel tickets (Bus, Cab,
 - **Interactive Maps**: Integrated Leaflet maps for location visualization.
 - **Dark Mode**: Toggle between light and dark themes.
 
+## Screenshots
+
+![App Screenshot 1](src/assets/screenshot1.png)
+![App Screenshot 2](src/assets/screenshot2.png)
+![App Screenshot 3](src/assets/screenshot3.png)
+![App Screenshot 4](src/assets/screenshot4.png)
+![App Screenshot 5](src/assets/screenshot5.png)
+![App Screenshot 6](src/assets/screenshot6.png)
+![App Screenshot 7](src/assets/screenshot7.png)
+
 ## Tech Stack
 
 ### Frontend
