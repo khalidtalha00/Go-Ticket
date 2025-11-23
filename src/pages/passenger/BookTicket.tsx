@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, MenuItem, Box, Autocomplete } from '@mui/material';
+import React, { useState, useCallback } from 'react';
+import { Container, Paper, Typography, TextField, Button, MenuItem, Box, Autocomplete, InputAdornment, IconButton } from '@mui/material';
 import QRCode from 'react-qr-code';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { useTickets } from '../../context/TicketContext';
+import { useAuth } from '../../context/AuthContext';
 import Map from '../../components/Map';
 
 const transportTypes = [
@@ -17,6 +19,7 @@ const BookTicket: React.FC = () => {
   const [transportType, setTransportType] = useState('bus_non_ac');
   const [ticket, setTicket] = useState<any>(null);
   const { addTicket } = useTickets();
+  const { user } = useAuth();
   
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [sourceOptions, setSourceOptions] = useState<any[]>([]);
@@ -60,29 +63,73 @@ const BookTicket: React.FC = () => {
     addTicket(newTicket);
   };
 
+  const handleLocationFound = useCallback((lat: number, lng: number) => {
+    setUserLocation({ lat, lng });
+  }, []);
+
+  const handleUseCurrentLocation = async () => {
+    if (!userLocation) {
+      alert("Waiting for location... Please ensure location services are enabled.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation.lat}&lon=${userLocation.lng}`);
+      const data = await response.json();
+      if (data && data.display_name) {
+        setSource(data.display_name);
+      }
+    } catch (error) {
+      console.error("Error reverse geocoding:", error);
+    }
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         <Box sx={{ flex: 1 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom>Book Ticket</Typography>
+            <Typography variant="subtitle1" gutterBottom sx={{ mb: 3, color: 'primary.main', fontWeight: 500 }}>
+              Hello {user?.name}, where would you like to go today?
+            </Typography>
             
             <Autocomplete
               freeSolo
               options={sourceOptions}
+              inputValue={source}
               getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
               onInputChange={(_, newInputValue) => {
                 setSource(newInputValue);
                 fetchSuggestions(newInputValue, setSourceOptions);
               }}
               renderInput={(params) => (
-                <TextField {...params} label="Source" fullWidth margin="normal" />
+                <TextField 
+                  {...params} 
+                  label="Source" 
+                  fullWidth 
+                  margin="normal"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {params.InputProps.endAdornment}
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleUseCurrentLocation} title="Use Current Location" edge="end">
+                            <MyLocationIcon color={userLocation ? "primary" : "disabled"} />
+                          </IconButton>
+                        </InputAdornment>
+                      </React.Fragment>
+                    ),
+                  }}
+                />
               )}
             />
 
             <Autocomplete
               freeSolo
               options={destinationOptions}
+              inputValue={destination}
               getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
               onInputChange={(_, newInputValue) => {
                 setDestination(newInputValue);
@@ -134,7 +181,7 @@ const BookTicket: React.FC = () => {
             </Paper>
           ) : (
             <Paper sx={{ height: '100%', minHeight: 400, overflow: 'hidden' }}>
-               <Map onLocationFound={(lat, lng) => setUserLocation({ lat, lng })} />
+               <Map onLocationFound={handleLocationFound} />
             </Paper>
           )}
         </Box>

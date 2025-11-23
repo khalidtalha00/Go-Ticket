@@ -26,13 +26,29 @@ const LocationMarker: React.FC<{ onLocationFound?: (lat: number, lng: number) =>
     const map = useMap();
 
     useEffect(() => {
-        map.locate().on("locationfound", function (e) {
+        const handleLocationFound = (e: L.LocationEvent) => {
             setPosition(e.latlng);
             map.flyTo(e.latlng, 13);
             if (onLocationFound) {
                 onLocationFound(e.latlng.lat, e.latlng.lng);
             }
-        });
+        };
+
+        const handleLocationError = (e: L.ErrorEvent) => {
+            console.error("Location access denied or error:", e.message);
+            // Optional: Show a user-friendly message or toast
+        };
+
+        map.on("locationfound", handleLocationFound);
+        map.on("locationerror", handleLocationError);
+
+        // Request high accuracy for better results
+        map.locate({ setView: false, enableHighAccuracy: true });
+
+        return () => {
+            map.off("locationfound", handleLocationFound);
+            map.off("locationerror", handleLocationError);
+        };
     }, [map, onLocationFound]);
 
     return position === null ? null : (

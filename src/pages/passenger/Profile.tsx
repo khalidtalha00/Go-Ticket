@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Container, Paper, Typography, Avatar, Box, Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import React, { useState, useMemo } from 'react';
+import { Container, Paper, Typography, Avatar, Box, Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 
@@ -8,9 +8,29 @@ const Profile: React.FC = () => {
   const { tickets } = useTickets();
   const [open, setOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [timeFilter, setTimeFilter] = useState('all');
 
-  const totalRides = tickets.length;
-  const totalSpent = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+  const filteredTickets = useMemo(() => {
+    if (timeFilter === 'all') return tickets;
+
+    const now = new Date();
+    return tickets.filter(ticket => {
+      const ticketDate = new Date(ticket.date);
+      // Check if date is valid
+      if (isNaN(ticketDate.getTime())) return false;
+
+      const diffTime = Math.abs(now.getTime() - ticketDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (timeFilter === 'week') return diffDays <= 7;
+      if (timeFilter === 'month') return diffDays <= 30;
+      if (timeFilter === 'year') return diffDays <= 365;
+      return true;
+    });
+  }, [tickets, timeFilter]);
+
+  const totalRides = filteredTickets.length;
+  const totalSpent = filteredTickets.reduce((sum, ticket) => sum + ticket.price, 0);
   // Mock distance calculation based on price (assuming avg 10rs/km for simplicity in this view)
   const totalDistance = Math.floor(totalSpent / 10); 
 
@@ -47,7 +67,24 @@ const Profile: React.FC = () => {
         
         <Divider sx={{ mb: 3 }} />
         
-        <Typography variant="h6" gutterBottom>Ride Statistics</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Ride Statistics</Typography>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel id="time-filter-label">Time Period</InputLabel>
+            <Select
+              labelId="time-filter-label"
+              value={timeFilter}
+              label="Time Period"
+              onChange={(e) => setTimeFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Time</MenuItem>
+              <MenuItem value="week">Last 7 Days</MenuItem>
+              <MenuItem value="month">Last 30 Days</MenuItem>
+              <MenuItem value="year">Last Year</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
         <Box sx={{ display: 'flex', gap: 3 }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h4" color="primary">{totalRides}</Typography>
