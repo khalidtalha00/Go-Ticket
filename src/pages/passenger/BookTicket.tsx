@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Container, Paper, Typography, TextField, Button, MenuItem, Box } from '@mui/material';
 import QRCode from 'react-qr-code';
+import { useTickets } from '../../context/TicketContext';
+import Map from '../../components/Map';
 
 const transportTypes = [
   { value: 'bus_ac', label: 'Bus (AC)', pricePerKm: 5 },
@@ -14,6 +16,7 @@ const BookTicket: React.FC = () => {
   const [destination, setDestination] = useState('');
   const [transportType, setTransportType] = useState('bus_non_ac');
   const [ticket, setTicket] = useState<any>(null);
+  const { addTicket } = useTickets();
 
   const handleBook = () => {
     // Mock distance calculation
@@ -25,11 +28,12 @@ const BookTicket: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9),
       source,
       destination,
-      type: type?.label,
+      type: type?.label || 'Unknown',
       price,
       date: new Date().toLocaleString(),
     };
     setTicket(newTicket);
+    addTicket(newTicket);
   };
 
   return (
@@ -92,8 +96,8 @@ const BookTicket: React.FC = () => {
               <Typography variant="caption">{ticket.date}</Typography>
             </Paper>
           ) : (
-            <Paper sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f0f0f0' }}>
-               <Typography variant="body1" color="textSecondary">Map View (Real-time location)</Typography>
+            <Paper sx={{ height: '100%', minHeight: 400, overflow: 'hidden' }}>
+               <Map />
             </Paper>
           )}
         </Box>
