@@ -45,22 +45,29 @@ const BookTicket: React.FC = () => {
     }
   };
 
-  const handleBook = () => {
+  const handleBook = async () => {
     // Mock distance calculation
     const distance = Math.floor(Math.random() * 20) + 1; // 1-20 km
     const type = transportTypes.find(t => t.value === transportType);
     const price = distance * (type?.pricePerKm || 0);
 
-    const newTicket = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newTicketData = {
       source,
       destination,
       type: type?.label || 'Unknown',
       price,
       date: new Date().toLocaleString(),
     };
-    setTicket(newTicket);
-    addTicket(newTicket);
+
+    try {
+      const createdTicket = await addTicket(newTicketData);
+      if (createdTicket) {
+        setTicket(createdTicket);
+      }
+    } catch (error) {
+      console.error("Failed to book ticket", error);
+      alert("Failed to book ticket. Please try again.");
+    }
   };
 
   const handleLocationFound = useCallback((lat: number, lng: number) => {

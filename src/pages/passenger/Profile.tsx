@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Container, Paper, Typography, Avatar, Box, Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 
@@ -9,6 +10,7 @@ const Profile: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredTickets = useMemo(() => {
     if (timeFilter === 'all') return tickets;
@@ -42,13 +44,46 @@ const Profile: React.FC = () => {
     setImageUrl('');
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const filePath = await response.json();
+        await updateUser({ profilePicture: filePath });
+        setOpen(false);
+      } else {
+        console.error('Upload failed');
+        alert('Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file');
+    }
+  };
+
+  const getProfileSrc = (path?: string) => {
+    if (!path) return undefined;
+    if (path.startsWith('http')) return path;
+    return `http://localhost:5000${path}`;
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
           <Avatar 
             sx={{ width: 80, height: 80, mr: 3, cursor: 'pointer' }} 
-            src={user?.profilePicture}
+            src={getProfileSrc(user?.profilePicture)}
             onClick={() => setOpen(true)}
           >
             {user?.name.charAt(0)}
@@ -104,21 +139,41 @@ const Profile: React.FC = () => {
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Update Profile Picture</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Image URL"
-            type="url"
-            fullWidth
-            variant="outlined"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            helperText="Enter a direct link to an image (e.g., https://example.com/avatar.jpg)"
-          />
+          <Box sx={{ mt: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              onClick={() => fileInputRef.current?.click()}
+              fullWidth
+              sx={{ mb: 2, py: 1.5 }}
+            >
+              Upload from Gallery
+            </Button>
+            <input
+              type="file"
+              hidden
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileUpload}
+            />
+            
+            <Divider sx={{ my: 2 }}>OR</Divider>
+
+            <TextField
+              margin="dense"
+              label="Image URL"
+              type="url"
+              fullWidth
+              variant="outlined"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              helperText="Enter a direct link to an image"
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained">Save</Button>
+          <Button onClick={handleSave} variant="contained">Save URL</Button>
         </DialogActions>
       </Dialog>
     </Container>

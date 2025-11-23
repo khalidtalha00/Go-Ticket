@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, type ReactNode } from 'reac
 export type UserRole = 'passenger' | 'driver' | null;
 
 interface User {
+  _id: string;
   name: string;
   email: string;
   role: UserRole;
@@ -11,9 +12,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (role: UserRole) => void;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
+  updateUser: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,15 +35,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const login = (role: UserRole) => {
-    // Mock login
-    const newUser: User = {
-      name: role === 'passenger' ? 'Talha Khalid' : 'Driver Mike',
-      email: role === 'passenger' ? 'khalidtalha00@gmail.com' : 'mike@driver.com',
-      role: role,
-    };
-    setUser(newUser);
-    localStorage.setItem('go_user', JSON.stringify(newUser));
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData || 'Login failed');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      localStorage.setItem('go_user', JSON.stringify(userData));
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
+  };
+
+  const register = async (name: string, email: string, password: string, role: UserRole) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData || 'Registration failed');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      localStorage.setItem('go_user', JSON.stringify(userData));
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -49,16 +84,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('go_user');
   };
 
-  const updateUser = (data: Partial<User>) => {
+  const updateUser = async (data: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem('go_user', JSON.stringify(updatedUser));
+      try {
+        const response = await fetch(`http://localhost:5000/api/auth/${user._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) throw new Error('Update failed');
+
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        localStorage.setItem('go_user', JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error("Update error:", error);
+        throw error;
+      }
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
-import { Container, Paper, Typography, Button, ToggleButton, ToggleButtonGroup, Box, TextField } from '@mui/material';
-import { useAuth, type UserRole } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Container, Paper, Typography, Button, Box, TextField, Alert } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<UserRole>('passenger');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    if (role) {
-      login(role);
-      navigate(role === 'passenger' ? '/passenger/dashboard' : '/driver/dashboard');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      setError('Invalid email or password');
     }
   };
 
@@ -22,24 +28,37 @@ const Login: React.FC = () => {
           Login to GoTicket
         </Typography>
         
-        <Box sx={{ mb: 3 }}>
-          <ToggleButtonGroup
-            value={role}
-            exclusive
-            onChange={(_, newRole) => newRole && setRole(newRole)}
-            aria-label="user role"
-          >
-            <ToggleButton value="passenger">Passenger</ToggleButton>
-            <ToggleButton value="driver">Driver</ToggleButton>
-          </ToggleButtonGroup>
+        {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
+
+        <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
+          <TextField 
+            label="Email" 
+            fullWidth 
+            margin="normal" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <TextField 
+            label="Password" 
+            type="password" 
+            fullWidth 
+            margin="normal" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }}>
+            Login
+          </Button>
         </Box>
-
-        <TextField label="Email" fullWidth margin="normal" />
-        <TextField label="Password" type="password" fullWidth margin="normal" />
-
-        <Button variant="contained" color="primary" fullWidth sx={{ mt: 3 }} onClick={handleLogin}>
-          Login
-        </Button>
+        
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            Don't have an account? <Link to="/register">Register here</Link>
+          </Typography>
+        </Box>
       </Paper>
     </Container>
   );
