@@ -21,11 +21,11 @@ const ScanTicket: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
+    <Container maxWidth="sm" sx={{ mt: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 2.5, sm: 4 }, textAlign: 'center' }}>
         <Typography variant="h5" gutterBottom>Scan Passenger Ticket</Typography>
         
-        <Box sx={{ height: 300, bgcolor: '#eee', my: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+        <Box sx={{ height: { xs: 240, sm: 300 }, bgcolor: '#eee', my: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
           {isScanning ? (
             <Scanner 
               onScan={handleScan} 
@@ -38,26 +38,26 @@ const ScanTicket: React.FC = () => {
         </Box>
 
         {!isScanning && (
-          <Button variant="contained" color="primary" size="large" onClick={startScanning} sx={{ mb: 3 }}>
+          <Button variant="contained" color="primary" size="large" onClick={startScanning} sx={{ mb: 3 }} fullWidth>
             Scan Ticket
           </Button>
         )}
 
         {isScanning && (
-          <Button variant="outlined" color="secondary" size="large" onClick={() => setIsScanning(false)} sx={{ mb: 3 }}>
+          <Button variant="outlined" color="secondary" size="large" onClick={() => setIsScanning(false)} sx={{ mb: 3 }} fullWidth>
             Cancel Scan
           </Button>
         )}
 
         <Typography variant="body1" gutterBottom>OR Enter Ticket ID</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField 
                 label="Ticket ID" 
                 fullWidth 
                 value={manualCode} 
                 onChange={(e) => setManualCode(e.target.value)} 
             />
-            <Button variant="outlined" onClick={() => setScannedData(manualCode)}>Verify</Button>
+            <Button variant="outlined" onClick={() => setScannedData(manualCode)} sx={{ minWidth: { sm: 120 } }}>Verify</Button>
         </Box>
 
         {scannedData && (

@@ -78,18 +78,18 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+    <Container maxWidth="md" sx={{ mt: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 2.5, sm: 4 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, flexDirection: { xs: 'column', sm: 'row' }, textAlign: { xs: 'center', sm: 'left' } }}>
           <Avatar 
-            sx={{ width: 80, height: 80, mr: 3, cursor: 'pointer' }} 
+            sx={{ width: { xs: 70, sm: 80 }, height: { xs: 70, sm: 80 }, mr: { xs: 0, sm: 3 }, mb: { xs: 1.5, sm: 0 }, cursor: 'pointer' }} 
             src={getProfileSrc(user?.profilePicture)}
             onClick={() => setOpen(true)}
           >
             {user?.name.charAt(0)}
           </Avatar>
           <Box>
-            <Typography variant="h4">{user?.name}</Typography>
+            <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>{user?.name}</Typography>
             <Typography variant="body1" color="textSecondary">{user?.email}</Typography>
             <Typography variant="caption" sx={{ textTransform: 'uppercase', bgcolor: '#eee', px: 1, borderRadius: 1 }}>
               {user?.role}
@@ -102,9 +102,9 @@ const Profile: React.FC = () => {
         
         <Divider sx={{ mb: 3 }} />
         
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
           <Typography variant="h6">Ride Statistics</Typography>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
             <InputLabel id="time-filter-label">Time Period</InputLabel>
             <Select
               labelId="time-filter-label"
@@ -120,7 +120,7 @@ const Profile: React.FC = () => {
           </FormControl>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 3 }}>
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h4" color="primary">{totalRides}</Typography>
             <Typography variant="body2">Total Rides</Typography>

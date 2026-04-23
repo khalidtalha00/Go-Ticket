@@ -1,76 +1,114 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icon in Leaflet with Webpack/Vite
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-const DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+import React, { useEffect, useMemo, useState } from 'react';
+import { GoogleMap, InfoWindowF, LoadScript, MarkerF } from '@react-google-maps/api';
 
 interface MapProps {
-    height?: string | number;
-    onLocationFound?: (lat: number, lng: number) => void;
+  height?: string | number;
+  onLocationFound?: (lat: number, lng: number) => void;
+  userLocation?: Coordinates | null;
+  metroStations?: MetroStationMarker[];
+  showMetroStations?: boolean;
 }
 
-const LocationMarker: React.FC<{ onLocationFound?: (lat: number, lng: number) => void }> = ({ onLocationFound }) => {
-    const [position, setPosition] = useState<L.LatLng | null>(null);
-    const map = useMap();
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
 
-    useEffect(() => {
-        const handleLocationFound = (e: L.LocationEvent) => {
-            setPosition(e.latlng);
-            map.flyTo(e.latlng, 13);
-            if (onLocationFound) {
-                onLocationFound(e.latlng.lat, e.latlng.lng);
-            }
+export type MetroStationMarker = {
+  stationName: string;
+  sourceName?: string;
+  distanceKm?: number;
+  lat: number;
+  lng: number;
+};
+
+const Map: React.FC<MapProps> = ({
+  height = '100%',
+  onLocationFound,
+  userLocation = null,
+  metroStations = [],
+  showMetroStations = false,
+}) => {
+  const defaultPosition: Coordinates = { lat: 28.6139, lng: 77.2090 };
+  const [position, setPosition] = useState<Coordinates>(userLocation ?? defaultPosition);
+  const [activeStation, setActiveStation] = useState<MetroStationMarker | null>(null);
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  useEffect(() => {
+    if (userLocation) {
+      setPosition(userLocation);
+      return;
+    }
+
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (coords) => {
+        const next = {
+          lat: coords.coords.latitude,
+          lng: coords.coords.longitude,
         };
-
-        const handleLocationError = (e: L.ErrorEvent) => {
-            console.error("Location access denied or error:", e.message);
-            // Optional: Show a user-friendly message or toast
-        };
-
-        map.on("locationfound", handleLocationFound);
-        map.on("locationerror", handleLocationError);
-
-        // Request high accuracy for better results
-        map.locate({ setView: false, enableHighAccuracy: true });
-
-        return () => {
-            map.off("locationfound", handleLocationFound);
-            map.off("locationerror", handleLocationError);
-        };
-    }, [map, onLocationFound]);
-
-    return position === null ? null : (
-        <Marker position={position}>
-            <Popup>You are here</Popup>
-        </Marker>
+        setPosition(next);
+        onLocationFound?.(next.lat, next.lng);
+      },
+      (error) => {
+        console.error('Location access denied or unavailable:', error.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
-}
+  }, [onLocationFound, userLocation]);
 
-const Map: React.FC<MapProps> = ({ height = '100%', onLocationFound }) => {
-    // Default position (New Delhi for context, or generic)
-    const defaultPosition: [number, number] = [28.6139, 77.2090];
+  const mapCenter = useMemo(() => {
+    if (showMetroStations && metroStations.length > 0) {
+      return { lat: metroStations[0].lat, lng: metroStations[0].lng };
+    }
+    return position;
+  }, [showMetroStations, metroStations, position]);
 
+  if (!apiKey) {
     return (
-        <MapContainer center={defaultPosition} zoom={13} scrollWheelZoom={true} style={{ height: height, width: '100%', minHeight: '300px' }}>
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <LocationMarker onLocationFound={onLocationFound} />
-        </MapContainer>
+      <div style={{ width: '100%', height, minHeight: '300px', display: 'grid', placeItems: 'center' }}>
+        Google Maps API key missing.
+      </div>
     );
+  }
+
+  return (
+    <LoadScript googleMapsApiKey={apiKey}>
+      <GoogleMap
+        center={mapCenter}
+        zoom={13}
+        mapContainerStyle={{ width: '100%', height: typeof height === 'number' ? `${height}px` : height, minHeight: '300px' }}
+        options={{ streetViewControl: false, mapTypeControl: false }}
+      >
+        <MarkerF position={position} label="You" />
+
+        {showMetroStations
+          ? metroStations.map((station, index) => (
+              <MarkerF
+                key={`${station.stationName}-${index}`}
+                position={{ lat: station.lat, lng: station.lng }}
+                label={`${index + 1}`}
+                onClick={() => setActiveStation(station)}
+              />
+            ))
+          : null}
+
+        {activeStation ? (
+          <InfoWindowF
+            position={{ lat: activeStation.lat, lng: activeStation.lng }}
+            onCloseClick={() => setActiveStation(null)}
+          >
+            <div>
+              <strong>{activeStation.stationName}</strong>
+              {activeStation.distanceKm ? (
+                <div>{activeStation.distanceKm.toFixed(2)} km away</div>
+              ) : null}
+            </div>
+          </InfoWindowF>
+        ) : null}
+      </GoogleMap>
+    </LoadScript>
+  );
 };
 
 export default Map;

@@ -7,13 +7,15 @@ interface User {
   name: string;
   email: string;
   role: UserRole;
+  vehicleType?: string;
+  vehicleName?: string;
   profilePicture?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, vehicleType?: string, vehicleName?: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => Promise<void>;
 }
@@ -57,12 +59,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
+  const register = async (name: string, email: string, password: string, role: UserRole, vehicleType?: string, vehicleName?: string) => {
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, vehicleType, vehicleName }),
       });
 
       if (!response.ok) {

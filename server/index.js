@@ -7,6 +7,7 @@ const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const ticketRoutes = require('./routes/tickets');
 const uploadRoute = require('./routes/upload');
+const metroRoutes = require('./routes/metro');
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/upload', uploadRoute);
+app.use('/api/metro', metroRoutes);
 
 app.get('/', (req, res) => {
   res.send('Go Tickets API is running');

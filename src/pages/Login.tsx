@@ -15,16 +15,16 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/', { state: { loginSuccess: true } });
     } catch (err) {
       setError('Invalid email or password');
     }
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography variant="h4" gutterBottom>
+    <Container maxWidth="sm" sx={{ mt: { xs: 3, md: 8 }, px: { xs: 1, sm: 2 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 2.5, sm: 4 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' }, textAlign: 'center' }}>
           Login to GoTicket
         </Typography>
         
@@ -54,7 +54,7 @@ const Login: React.FC = () => {
           </Button>
         </Box>
         
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body2">
             Don't have an account? <Link to="/register">Register here</Link>
           </Typography>

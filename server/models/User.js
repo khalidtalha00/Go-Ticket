@@ -5,6 +5,8 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['passenger', 'driver'], default: 'passenger' },
+  vehicleType: { type: String },
+  vehicleName: { type: String },
   profilePicture: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
