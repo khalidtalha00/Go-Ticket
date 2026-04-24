@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import { buildApiUrl } from '../utils/api';
 
 export type UserRole = 'passenger' | 'driver' | null;
 
@@ -9,13 +10,22 @@ interface User {
   role: UserRole;
   vehicleType?: string;
   vehicleName?: string;
+  vehicleNumber?: string;
   profilePicture?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole, vehicleType?: string, vehicleName?: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+    vehicleType?: string,
+    vehicleName?: string,
+    vehicleNumber?: string
+  ) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => Promise<void>;
 }
@@ -39,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -59,12 +69,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole, vehicleType?: string, vehicleName?: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+    vehicleType?: string,
+    vehicleName?: string,
+    vehicleNumber?: string
+  ) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(buildApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, vehicleType, vehicleName }),
+        body: JSON.stringify({ name, email, password, role, vehicleType, vehicleName, vehicleNumber }),
       });
 
       if (!response.ok) {
@@ -89,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateUser = async (data: Partial<User>) => {
     if (user) {
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/${user._id}`, {
+        const response = await fetch(buildApiUrl(`/api/auth/${user._id}`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),

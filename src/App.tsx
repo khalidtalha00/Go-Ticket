@@ -13,6 +13,7 @@ import MyTickets from './pages/passenger/MyTickets';
 import Profile from './pages/passenger/Profile';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import ScanTicket from './pages/driver/ScanTicket';
+import DriverProfile from './pages/driver/Profile';
 import './App.css';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
               {/* Driver Routes */}
               <Route path="/driver/dashboard" element={<DriverDashboard />} />
               <Route path="/driver/scan" element={<ScanTicket />} />
+              <Route path="/driver/profile" element={<DriverProfile />} />
             </Routes>
           </Router>
         </TicketProvider>

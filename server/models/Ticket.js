@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const TicketSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   source: { type: String, required: true },
   destination: { type: String, required: true },
   type: { type: String, required: true },

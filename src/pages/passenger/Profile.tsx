@@ -3,6 +3,7 @@ import { Container, Paper, Typography, Avatar, Box, Divider, Button, TextField, 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
+import { buildApiUrl, buildAssetUrl } from '../../utils/api';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -52,7 +53,7 @@ const Profile: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(buildApiUrl('/api/upload'), {
         method: 'POST',
         body: formData,
       });
@@ -73,8 +74,7 @@ const Profile: React.FC = () => {
 
   const getProfileSrc = (path?: string) => {
     if (!path) return undefined;
-    if (path.startsWith('http')) return path;
-    return `http://localhost:5000${path}`;
+    return buildAssetUrl(path);
   };
 
   return (

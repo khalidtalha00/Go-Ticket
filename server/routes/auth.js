@@ -4,9 +4,9 @@ const User = require('../models/User');
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, vehicleType, vehicleName } = req.body;
+    const { name, email, password, role, vehicleType, vehicleName, vehicleNumber } = req.body;
     // In a real app, hash the password here using bcrypt
-    const newUser = new User({ name, email, password, role, vehicleType, vehicleName });
+    const newUser = new User({ name, email, password, role, vehicleType, vehicleName, vehicleNumber });
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
   } catch (err) {

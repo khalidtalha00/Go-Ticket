@@ -50,6 +50,7 @@ const Navbar: React.FC = () => {
           ? [
               { label: 'Dashboard', onClick: () => navigate('/driver/dashboard'), color: 'primary' as const },
               { label: 'Scan Ticket', onClick: () => navigate('/driver/scan'), color: 'primary' as const },
+              { label: 'Profile', onClick: () => navigate('/driver/profile'), color: 'primary' as const },
             ]
           : []),
         { label: 'Logout', onClick: handleLogout, color: 'error' as const },

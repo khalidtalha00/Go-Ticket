@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { buildApiUrl } from "../utils/api";
 
 export interface Ticket {
   id: string;
@@ -11,6 +12,13 @@ export interface Ticket {
   userId?: string;
   expiryTime?: string;
   status?: string;
+  driver?: {
+    id: string;
+    name: string;
+    vehicleName?: string;
+    vehicleNumber?: string;
+    profilePicture?: string;
+  } | null;
 }
 
 export type DriverRoute = {
@@ -41,6 +49,7 @@ interface TicketContextType {
     destination: string;
     transportType?: string;
   }) => RouteAvailabilityResult;
+  removeDriverRoute: (id: string) => void;
 }
 
 const DRIVER_ROUTES_KEY = "goTicket.driverRoutes";
@@ -81,7 +90,7 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({
       if (user?._id) {
         setLoading(true);
         try {
-          const response = await fetch(`http://localhost:5000/api/tickets/${user._id}`);
+          const response = await fetch(buildApiUrl(`/api/tickets/${user._id}`));
           if (response.ok) {
             const data = await response.json();
             // Map _id to id for frontend compatibility
@@ -108,7 +117,7 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user?._id) return;
 
     try {
-      const response = await fetch("http://localhost:5000/api/tickets", {
+      const response = await fetch(buildApiUrl("/api/tickets"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -131,7 +140,7 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const removeTicket = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/tickets/${id}`), {
         method: "DELETE",
       });
 
@@ -157,6 +166,11 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({
       createdAt: new Date().toISOString(),
     };
     persistRoutes([nextRoute, ...driverRoutes]);
+  };
+
+  const removeDriverRoute: TicketContextType["removeDriverRoute"] = (id) => {
+    const next = driverRoutes.filter((r) => r.id !== id);
+    persistRoutes(next);
   };
 
   const getRouteAvailability: TicketContextType["getRouteAvailability"] = ({
@@ -205,6 +219,7 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({
       driverRoutes,
       addDriverRoute,
       getRouteAvailability,
+      removeDriverRoute,
     }),
     [tickets, loading, driverRoutes]
   );

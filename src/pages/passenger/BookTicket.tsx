@@ -1,15 +1,12 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
-import { Container, Paper, Typography, TextField, Button, MenuItem, Box, Autocomplete } from '@mui/material';
+import { Avatar, Container, Paper, Typography, TextField, Button, MenuItem, Box, Autocomplete } from '@mui/material';
 import QRCode from 'react-qr-code';
 import { useTickets, type Ticket } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
 import Map, { type MetroStationMarker } from '../../components/Map';
-import {
-  getPlaceSuggestions,
-  type PlaceSuggestion,
-} from '../../utils/places';
+import { buildApiUrl } from '../../utils/api';
+import { buildAssetUrl } from '../../utils/api';
 
-type LocationOption = PlaceSuggestion;
 type Coordinates = { lat: number; lng: number };
 
 const transportTypes = [
@@ -34,14 +31,11 @@ export default function BookTicket() {
   const [metroStations, setMetroStations] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/metro/stations')
+    fetch(buildApiUrl('/api/metro/stations'))
       .then(res => res.json())
       .then(data => setMetroStations(data))
       .catch(err => console.error('Failed to fetch metro stations:', err));
   }, []);
-
-  const [sourceOptions, setSourceOptions] = useState<LocationOption[]>([]);
-  const [destinationOptions, setDestinationOptions] = useState<LocationOption[]>([]);
 
   const [isSourceSelectedFromSuggestion, setIsSourceSelectedFromSuggestion] = useState(false);
   const [isDestinationSelectedFromSuggestion, setIsDestinationSelectedFromSuggestion] = useState(false);
@@ -49,24 +43,6 @@ export default function BookTicket() {
   const [isResolvingMetroLocation, setIsResolvingMetroLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [nearbyMetroStations, setNearbyMetroStations] = useState<MetroStationMarker[]>([]);
-
-  const fetchSuggestions = async (
-    query: string,
-    setOptions: (options: LocationOption[]) => void
-  ) => {
-    if (!query || query.length < 3) {
-      setOptions([]);
-      return;
-    }
-
-    try {
-      const items = await getPlaceSuggestions(query);
-      setOptions(items);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setOptions([]);
-    }
-  };
 
   const handleBook = async () => {
     if (!canBook) return;
@@ -78,7 +54,9 @@ export default function BookTicket() {
 
     if (transportType === 'metro') {
       try {
-        const response = await fetch(`http://localhost:5000/api/metro/route?from=${encodeURIComponent(source)}&to=${encodeURIComponent(destination)}`);
+        const response = await fetch(
+          buildApiUrl(`/api/metro/route?from=${encodeURIComponent(source)}&to=${encodeURIComponent(destination)}`)
+        );
         if (response.ok) {
           const data = await response.json();
           if (data.status === 200) {
@@ -140,7 +118,9 @@ export default function BookTicket() {
 
         try {
           const response = await fetch(
-            `http://localhost:5000/api/metro/nearby?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}&limit=5`
+            buildApiUrl(
+              `/api/metro/nearby?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}&limit=5`
+            )
           );
           const data = await response.json();
 
@@ -187,7 +167,7 @@ export default function BookTicket() {
   return (
     <Container maxWidth="md" sx={{ mt: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Paper sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>Book Ticket</Typography>
             <Typography variant="subtitle1" gutterBottom sx={{ mb: 3, color: 'primary.main', fontWeight: 500 }}>
@@ -221,98 +201,40 @@ export default function BookTicket() {
               ))}
             </TextField>
 
-            {transportType === 'metro' ? (
-              <>
-                <Autocomplete
-                  key="metro-source"
-                  options={metroStations}
-                  getOptionLabel={(option) => option?.name || ''}
-                  value={metroStations.find(s => s.name === source) || null}
-                  onChange={(_, newValue) => {
-                    setSource(newValue?.name || '');
-                    setIsSourceSelectedFromSuggestion(!!newValue);
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Source Station" fullWidth margin="normal" />
-                  )}
-                />
-                {metroLocationMessage ? (
-                  <Typography
-                    variant="body2"
-                    sx={{ mt: 1, color: metroLocationMessage.startsWith('Nearest') ? 'success.main' : 'warning.main' }}
-                  >
-                    {metroLocationMessage}
-                  </Typography>
-                ) : null}
-                <Autocomplete
-                  key="metro-destination"
-                  options={metroStations}
-                  getOptionLabel={(option) => option?.name || ''}
-                  value={metroStations.find(s => s.name === destination) || null}
-                  onChange={(_, newValue) => {
-                    setDestination(newValue?.name || '');
-                    setIsDestinationSelectedFromSuggestion(!!newValue);
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Destination Station" fullWidth margin="normal" />
-                  )}
-                />
-              </>
-            ) : (
-              <>
-                <Autocomplete
-                  key="other-source"
-                  freeSolo
-                  options={sourceOptions}
-                  inputValue={source}
-                  getOptionLabel={(option) => typeof option === 'string' ? option : option?.description || ''}
-                  onInputChange={(_, newInputValue, reason) => {
-                    setSource(newInputValue);
-                    fetchSuggestions(newInputValue, setSourceOptions);
-                    if (reason === 'input' || reason === 'clear') {
-                      setIsSourceSelectedFromSuggestion(false);
-                    }
-                  }}
-                  onChange={(_, newValue) => {
-                    if (newValue && typeof newValue !== 'string') {
-                      setSource(newValue.description);
-                      setIsSourceSelectedFromSuggestion(true);
-                    } else {
-                      setIsSourceSelectedFromSuggestion(false);
-                    }
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Source" fullWidth margin="normal" />
-                  )}
-                />
-
-                <Autocomplete
-                  key="other-destination"
-                  freeSolo
-                  options={destinationOptions}
-                  inputValue={destination}
-                  getOptionLabel={(option) => typeof option === 'string' ? option : option?.description || ''}
-                  onInputChange={(_, newInputValue, reason) => {
-                    setDestination(newInputValue);
-                    fetchSuggestions(newInputValue, setDestinationOptions);
-                    if (reason === 'input' || reason === 'clear') {
-                      setIsDestinationSelectedFromSuggestion(false);
-                    }
-                  }}
-                  onChange={(_, newValue) => {
-                    if (newValue && typeof newValue !== 'string') {
-                      setDestination(newValue.description);
-                      setIsDestinationSelectedFromSuggestion(true);
-                    } else {
-                      setIsDestinationSelectedFromSuggestion(false);
-                    }
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Destination" fullWidth margin="normal" />
-                  )}
-                />
-              </>
-            )}
+            <Autocomplete
+              key="source"
+              options={metroStations}
+              getOptionLabel={(option) => option?.name || ''}
+              value={metroStations.find(s => s.name === source) || null}
+              onChange={(_, newValue) => {
+                setSource(newValue?.name || '');
+                setIsSourceSelectedFromSuggestion(!!newValue);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label={transportType === 'metro' ? "Source Station" : "Source"} fullWidth margin="normal" />
+              )}
+            />
+            {transportType === 'metro' && metroLocationMessage ? (
+              <Typography
+                variant="body2"
+                sx={{ mt: 1, color: metroLocationMessage.startsWith('Nearest') ? 'success.main' : 'warning.main' }}
+              >
+                {metroLocationMessage}
+              </Typography>
+            ) : null}
+            <Autocomplete
+              key="destination"
+              options={metroStations}
+              getOptionLabel={(option) => option?.name || ''}
+              value={metroStations.find(s => s.name === destination) || null}
+              onChange={(_, newValue) => {
+                setDestination(newValue?.name || '');
+                setIsDestinationSelectedFromSuggestion(!!newValue);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label={transportType === 'metro' ? "Destination Station" : "Destination"} fullWidth margin="normal" />
+              )}
+            />
 
             <Box sx={{ mt: 2 }}>
               {canBook ? (
@@ -356,22 +278,58 @@ export default function BookTicket() {
           {ticket ? (
             <Paper sx={{ p: { xs: 2.5, md: 3 }, textAlign: 'center' }}>
               <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.4rem', md: '1.75rem' } }}>Ticket Generated</Typography>
-              <Box sx={{ my: 2 }}>
+              <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
                 <QRCode value={JSON.stringify(ticket)} size={130} />
               </Box>
               <Typography variant="h6">₹{ticket.price}</Typography>
               <Typography variant="body1">{ticket.source} to {ticket.destination}</Typography>
               <Typography variant="body2" color="textSecondary">{ticket.type}</Typography>
               <Typography variant="caption">{ticket.date}</Typography>
+              {ticket.driver ? (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    textAlign: 'left',
+                    display: 'flex',
+                    gap: 1.5,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Avatar src={ticket.driver.profilePicture ? buildAssetUrl(ticket.driver.profilePicture) : undefined}>
+                    {ticket.driver.name?.charAt(0) || 'D'}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle2">Driver: {ticket.driver.name}</Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Vehicle: {ticket.driver.vehicleName || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Number: {ticket.driver.vehicleNumber || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : null}
             </Paper>
           ) : (
-            <Paper sx={{ height: '100%', minHeight: { xs: 280, md: 400 }, overflow: 'hidden' }}>
+            <Paper
+              sx={{
+                height: '100%',
+                minHeight: { xs: 340, md: 460 },
+                overflow: 'hidden',
+                borderRadius: 2,
+                p: 0.5,
+              }}
+            >
               <Map
                 onLocationFound={handleLocationFound}
                 userLocation={userLocation}
                 metroStations={nearbyMetroStations}
                 showMetroStations={transportType === 'metro'}
-                height={transportType === 'metro' ? 360 : 320}
+                height={transportType === 'metro' ? 'clamp(360px, 50vh, 560px)' : 'clamp(340px, 45vh, 500px)'}
               />
             </Paper>
           )}

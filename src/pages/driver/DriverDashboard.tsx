@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Paper,
@@ -9,18 +9,24 @@ import {
   MenuItem,
   Autocomplete,
   Alert,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
-import { getPlaceSuggestions, type PlaceSuggestion } from '../../utils/places';
+import { buildApiUrl } from '../../utils/api';
 
-type LocationOption = PlaceSuggestion;
+type LocationOption = { id: string; name: string };
 
 export default function DriverDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addDriverRoute, driverRoutes } = useTickets();
+  const { addDriverRoute, removeDriverRoute, driverRoutes } = useTickets();
 
   const [routeForm, setRouteForm] = useState({
     source: '',
@@ -28,28 +34,16 @@ export default function DriverDashboard() {
     transportType: 'Bus (Non-AC)',
   });
 
-  const [sourceOptions, setSourceOptions] = useState<LocationOption[]>([]);
-  const [destinationOptions, setDestinationOptions] = useState<LocationOption[]>([]);
+  const [metroStations, setMetroStations] = useState<LocationOption[]>([]);
   const [sourcePicked, setSourcePicked] = useState(false);
   const [destinationPicked, setDestinationPicked] = useState(false);
 
-  const fetchSuggestions = async (
-    query: string,
-    setter: React.Dispatch<React.SetStateAction<LocationOption[]>>
-  ) => {
-    if (!query || query.length < 3) {
-      setter([]);
-      return;
-    }
-
-    try {
-      const items = await getPlaceSuggestions(query);
-      setter(items);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setter([]);
-    }
-  };
+  useEffect(() => {
+    fetch(buildApiUrl('/api/metro/stations'))
+      .then(res => res.json())
+      .then(data => setMetroStations(data))
+      .catch(err => console.error('Failed to fetch metro stations:', err));
+  }, []);
 
   const driverId = String(user?._id || user?.email || 'unknown-driver');
   const myRoutes = driverRoutes.filter((r) => r.driverId === driverId);
@@ -57,6 +51,11 @@ export default function DriverDashboard() {
   const onAddRoute = (e: React.FormEvent) => {
     e.preventDefault();
     if (!routeForm.source.trim() || !routeForm.destination.trim()) return;
+
+    // Remove existing active routes for this driver to register a new one
+    myRoutes.forEach((route) => {
+      removeDriverRoute(route.id);
+    });
 
     addDriverRoute({
       driverId,
@@ -68,8 +67,6 @@ export default function DriverDashboard() {
     setRouteForm((s) => ({ ...s, source: '', destination: '' }));
     setSourcePicked(false);
     setDestinationPicked(false);
-    setSourceOptions([]);
-    setDestinationOptions([]);
   };
 
   const canSaveRoute =
@@ -161,20 +158,15 @@ export default function DriverDashboard() {
 
         <Box component="form" onSubmit={onAddRoute} sx={{ display: 'grid', gap: 2 }}>
           <Autocomplete
-            freeSolo
-            options={sourceOptions}
-            inputValue={routeForm.source}
-            getOptionLabel={(option) => (typeof option === 'string' ? option : option.description)}
-            onInputChange={(_, newInputValue, reason) => {
-              setRouteForm((s) => ({ ...s, source: newInputValue }));
-              fetchSuggestions(newInputValue, setSourceOptions);
-              if (reason === 'input' || reason === 'clear') setSourcePicked(false);
-            }}
+            options={metroStations}
+            getOptionLabel={(option) => option?.name || ''}
+            value={metroStations.find(s => s.name === routeForm.source) || null}
             onChange={(_, newValue) => {
-              if (newValue && typeof newValue !== 'string') {
-                setRouteForm((s) => ({ ...s, source: newValue.description }));
+              if (newValue) {
+                setRouteForm((s) => ({ ...s, source: newValue.name }));
                 setSourcePicked(true);
               } else {
+                setRouteForm((s) => ({ ...s, source: '' }));
                 setSourcePicked(false);
               }
             }}
@@ -182,20 +174,15 @@ export default function DriverDashboard() {
           />
 
           <Autocomplete
-            freeSolo
-            options={destinationOptions}
-            inputValue={routeForm.destination}
-            getOptionLabel={(option) => (typeof option === 'string' ? option : option.description)}
-            onInputChange={(_, newInputValue, reason) => {
-              setRouteForm((s) => ({ ...s, destination: newInputValue }));
-              fetchSuggestions(newInputValue, setDestinationOptions);
-              if (reason === 'input' || reason === 'clear') setDestinationPicked(false);
-            }}
+            options={metroStations}
+            getOptionLabel={(option) => option?.name || ''}
+            value={metroStations.find(s => s.name === routeForm.destination) || null}
             onChange={(_, newValue) => {
-              if (newValue && typeof newValue !== 'string') {
-                setRouteForm((s) => ({ ...s, destination: newValue.description }));
+              if (newValue) {
+                setRouteForm((s) => ({ ...s, destination: newValue.name }));
                 setDestinationPicked(true);
               } else {
+                setRouteForm((s) => ({ ...s, destination: '' }));
                 setDestinationPicked(false);
               }
             }}
@@ -235,15 +222,21 @@ export default function DriverDashboard() {
               No routes added yet.
             </Typography>
           ) : (
-            <Box component="ul" sx={{ pl: 2, mb: 0 }}>
+            <List>
               {myRoutes.map((r) => (
-                <li key={r.id}>
-                  <Typography variant="body2">
-                    {r.source} → {r.destination} ({r.transportType})
-                  </Typography>
-                </li>
+                <ListItem key={r.id} sx={{ bgcolor: 'background.paper', mb: 1, borderRadius: 1, border: '1px solid #eee' }}>
+                  <ListItemText
+                    primary={`${r.source} → ${r.destination}`}
+                    secondary={r.transportType}
+                  />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" aria-label="delete" onClick={() => removeDriverRoute(r.id)} color="error">
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
               ))}
-            </Box>
+            </List>
           )}
         </Box>
       </Paper>

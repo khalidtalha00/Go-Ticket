@@ -23,7 +23,7 @@ export type MetroStationMarker = {
 };
 
 const Map: React.FC<MapProps> = ({
-  height = '100%',
+  height = 'clamp(320px, 45vh, 520px)',
   onLocationFound,
   userLocation = null,
   metroStations = [],
@@ -66,7 +66,18 @@ const Map: React.FC<MapProps> = ({
 
   if (!apiKey) {
     return (
-      <div style={{ width: '100%', height, minHeight: '300px', display: 'grid', placeItems: 'center' }}>
+      <div
+        style={{
+          width: '100%',
+          height,
+          minHeight: '320px',
+          borderRadius: '12px',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '12px',
+          textAlign: 'center',
+        }}
+      >
         Google Maps API key missing.
       </div>
     );
@@ -77,7 +88,11 @@ const Map: React.FC<MapProps> = ({
       <GoogleMap
         center={mapCenter}
         zoom={13}
-        mapContainerStyle={{ width: '100%', height: typeof height === 'number' ? `${height}px` : height, minHeight: '300px' }}
+        mapContainerStyle={{
+          width: '100%',
+          height: typeof height === 'number' ? `${height}px` : height,
+          minHeight: '320px',
+        }}
         options={{ streetViewControl: false, mapTypeControl: false }}
       >
         <MarkerF position={position} label="You" />

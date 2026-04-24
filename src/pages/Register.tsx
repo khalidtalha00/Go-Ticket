@@ -12,13 +12,22 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [vehicleType, setVehicleType] = useState('Bus (Non-AC)');
   const [vehicleName, setVehicleName] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
   const [error, setError] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      await register(name, email, password, role, role === 'driver' ? vehicleType : undefined, role === 'driver' ? vehicleName : undefined);
+      await register(
+        name,
+        email,
+        password,
+        role,
+        role === 'driver' ? vehicleType : undefined,
+        role === 'driver' ? vehicleName : undefined,
+        role === 'driver' ? vehicleNumber : undefined
+      );
       navigate('/', { state: { loginSuccess: true } });
     } catch (err) {
       setError('Registration failed. Please try again.');
@@ -97,6 +106,15 @@ const Register: React.FC = () => {
                 margin="normal" 
                 value={vehicleName}
                 onChange={(e) => setVehicleName(e.target.value)}
+                required
+              />
+              <TextField
+                label="Vehicle Number"
+                fullWidth
+                margin="normal"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                placeholder="e.g. DL1PC1234"
                 required
               />
             </>

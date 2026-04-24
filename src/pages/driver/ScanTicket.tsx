@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
-import { Container, Paper, Typography, Button, Box, TextField } from '@mui/material';
+import { Container, Paper, Typography, Button, Box, TextField, Divider } from '@mui/material';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 const ScanTicket: React.FC = () => {
   const [scannedData, setScannedData] = useState<string | null>(null);
+  const [ticketData, setTicketData] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [isScanning, setIsScanning] = useState(true);
+
+  const verifyCode = (code: string) => {
+    try {
+      const parsed = JSON.parse(code);
+      if (parsed && parsed.source && parsed.destination && parsed.price !== undefined) {
+        setTicketData(parsed);
+        setError(null);
+      } else {
+        setTicketData(null);
+        setError('Invalid ticket format.');
+      }
+    } catch (e) {
+      setTicketData(null);
+      setError('Invalid QR Code data.');
+    }
+    setScannedData(code);
+  };
 
   const handleScan = (detectedCodes: any[]) => {
     if (detectedCodes && detectedCodes.length > 0) {
       const code = detectedCodes[0].rawValue;
-      setScannedData(code);
+      verifyCode(code);
       setIsScanning(false);
     }
   };
@@ -18,6 +37,8 @@ const ScanTicket: React.FC = () => {
   const startScanning = () => {
     setIsScanning(true);
     setScannedData(null);
+    setTicketData(null);
+    setError(null);
   };
 
   return (
@@ -52,18 +73,47 @@ const ScanTicket: React.FC = () => {
         <Typography variant="body1" gutterBottom>OR Enter Ticket ID</Typography>
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField 
-                label="Ticket ID" 
+                label="Ticket JSON String" 
                 fullWidth 
                 value={manualCode} 
                 onChange={(e) => setManualCode(e.target.value)} 
             />
-            <Button variant="outlined" onClick={() => setScannedData(manualCode)} sx={{ minWidth: { sm: 120 } }}>Verify</Button>
+            <Button variant="outlined" onClick={() => { setIsScanning(false); verifyCode(manualCode); }} sx={{ minWidth: { sm: 120 } }}>Verify</Button>
         </Box>
 
-        {scannedData && (
-          <Box sx={{ mt: 4, textAlign: 'left', bgcolor: '#f9f9f9', p: 2, borderRadius: 1 }}>
-            <Typography variant="h6" color="success.main" gutterBottom>Ticket Verified!</Typography>
-            <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>{scannedData}</Typography>
+        {error && (
+          <Box sx={{ mt: 4, textAlign: 'left', bgcolor: '#ffebee', p: 2, borderRadius: 1 }}>
+            <Typography variant="h6" color="error.main" gutterBottom>Verification Failed</Typography>
+            <Typography variant="body1">{error}</Typography>
+          </Box>
+        )}
+
+        {ticketData && (
+          <Box sx={{ mt: 4, textAlign: 'left', bgcolor: '#f9f9f9', p: 3, borderRadius: 2, border: '1px solid #ddd' }}>
+            <Typography variant="h5" color="success.main" gutterBottom fontWeight="bold" textAlign="center">Ticket Verified!</Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Source</Typography>
+                <Typography variant="body1" fontWeight="500">{ticketData.source}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Destination</Typography>
+                <Typography variant="body1" fontWeight="500">{ticketData.destination}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Amount Paid</Typography>
+                <Typography variant="body1" fontWeight="bold" color="primary">₹{ticketData.price}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Transport Type</Typography>
+                <Typography variant="body1">{ticketData.type}</Typography>
+              </Box>
+            </Box>
+            <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="textSecondary">Date</Typography>
+                <Typography variant="body2">{ticketData.date}</Typography>
+            </Box>
           </Box>
         )}
       </Paper>

@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ['passenger', 'driver'], default: 'passenger' },
   vehicleType: { type: String },
   vehicleName: { type: String },
+  vehicleNumber: { type: String },
   profilePicture: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
