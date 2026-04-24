@@ -3,7 +3,6 @@ import { Container, Paper, Typography, Button, Box, TextField, Divider } from '@
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 const ScanTicket: React.FC = () => {
-  const [scannedData, setScannedData] = useState<string | null>(null);
   const [ticketData, setTicketData] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
@@ -23,7 +22,6 @@ const ScanTicket: React.FC = () => {
       setTicketData(null);
       setError('Invalid QR Code data.');
     }
-    setScannedData(code);
   };
 
   const handleScan = (detectedCodes: any[]) => {
@@ -36,7 +34,6 @@ const ScanTicket: React.FC = () => {
 
   const startScanning = () => {
     setIsScanning(true);
-    setScannedData(null);
     setTicketData(null);
     setError(null);
   };
