@@ -23,9 +23,13 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 // Ensure uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+const uploadDir = path.join(process.env.VERCEL ? '/tmp' : __dirname, 'uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Could not create uploads directory:', err.message);
 }
 
 // Middleware
@@ -34,14 +38,14 @@ app.use(
     origin: (origin, callback) => {
       // Allow non-browser tools (no origin header) and same-origin server calls.
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   })
 );
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadDir));
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
@@ -63,3 +67,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+module.exports = app;
