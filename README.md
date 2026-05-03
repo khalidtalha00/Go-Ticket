@@ -1,6 +1,6 @@
 # Go Tickets
 
-[Live Link] (https://go-ticket123.vercel.app/))
+## Live Link -- [[https://go-ticket123.vercel.app/](https://go-ticket123.vercel.app/)]
 
 Go Tickets is a full-stack web application for booking travel tickets (Bus, Cab, Bike). It features a modern React frontend and a robust Node.js/Express backend with MongoDB integration. The application supports user authentication, ticket booking, QR code generation, and profile management.
 
